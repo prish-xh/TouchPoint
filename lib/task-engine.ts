@@ -86,6 +86,12 @@ export function createTaskEngine(client: PerceptionClient, catalog: Appliance[] 
           ...routine.steps.map((s) => s.controlId).filter((id) => !ids.has(id)),
         ])];
         const panelReady = result.panelReady && missingControls.length === 0;
+        if (!result.panelReady && missingControls.length === 0) {
+          // A complete map without approval is a profile gate, not a reason to keep paying for scans.
+          update({ controls: result.controls, missingControls, panelReady: false });
+          pauseWith("unexpected", result.message);
+          return;
+        }
         update({ controls: result.controls, missingControls, panelReady,
           status: panelReady && started ? "guiding" : "scanning",
           pauseReason: panelReady ? null : state.pauseReason,

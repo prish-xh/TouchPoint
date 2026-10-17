@@ -38,9 +38,9 @@ export async function readJson(stream: ReadableStream<Uint8Array> | null, limit:
     catch { throw new ServiceError("INVALID_JSON", 400, "Invalid JSON body."); }
   } finally { reader.releaseLock(); }
 }
-export async function providerJson(url: string, init: RequestInit, fetcher: typeof fetch = fetch): Promise<unknown> {
+export async function providerJson(url: string, init: RequestInit, fetcher: typeof fetch = fetch, timeoutMs = 20000): Promise<unknown> {
   try {
-    const response = await fetcher(url, { ...init, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(20000) });
+    const response = await fetcher(url, { ...init, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs) });
     if (!response.ok) {
       await response.body?.cancel();
       throw new Error("provider failure");
