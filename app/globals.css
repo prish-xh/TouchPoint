@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* Agreed palette. Every color is paired with text; nothing relies on color alone. */
+@theme {
+  --color-page: #f8fafc;
+  --color-ink: #0f172a;
+  --color-muted: #475569;
+  --color-primary: #1d4ed8;
+  --color-primary-dark: #1e40af;
+  --color-line: #e2e8f0;
+  --color-good: #15803d;
+  --color-warn: #b45309;
+  --color-bad: #b91c1c;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  font-size: 18px; /* body text never below 18px */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.45;
+}
+
+/* Visible keyboard / switch-control focus everywhere. */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Headings receive focus programmatically on screen changes (for screen readers); no ring needed there. */
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
