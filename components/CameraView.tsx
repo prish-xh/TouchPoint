@@ -97,7 +97,7 @@ export function CameraView({
   }, [videoRef, tipRef]);
 
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl bg-ink">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl bg-camera">
       <video
         ref={videoRef}
         className="absolute inset-0 h-full w-full object-contain"

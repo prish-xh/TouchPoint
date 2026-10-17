@@ -9,6 +9,7 @@ import { APPLIANCES, useTaskController } from "@/components/controller";
 import { TaskClientProvider, useClientMode } from "@/components/TaskClientProvider";
 import { displayMessage } from "@/components/message";
 import { DemoAccess } from "@/components/screens/DemoAccess";
+import { AppHeader } from "@/components/AppHeader";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { RoutineScreen } from "@/components/screens/RoutineScreen";
 import { SessionScreen } from "@/components/screens/SessionScreen";
@@ -66,13 +67,14 @@ function App() {
 
   return (
     <main ref={mainRef} className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
+      <AppHeader onHome={screen === "home" ? undefined : goHome} />
       {mode.live ? (
-        <p className="rounded-xl border border-good bg-green-50 px-4 py-2 text-base font-semibold text-good">
-          Live mode: the panel is read by the camera.
+        <p className="rounded-2xl bg-good-bg px-4 py-2 text-base font-bold text-good">
+          Live mode: the camera reads the real panel.
         </p>
       ) : (
-        <p className="rounded-xl border border-warn bg-amber-50 px-4 py-2 text-base font-semibold text-warn">
-          Demo mode: scan and check results are simulated, not read from the panel.
+        <p className="rounded-2xl bg-warn-bg px-4 py-2 text-base font-bold text-warn">
+          Demo mode: results are simulated, not read from the panel.
         </p>
       )}
 

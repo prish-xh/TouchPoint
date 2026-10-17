@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CameraView } from "../CameraView";
 import { DevPanel } from "./DevPanel";
-import { Button, Card, ScreenTitle, SimulatedTag, StatusBadge } from "../ui";
+import { BackButton, Button, Card, SimulatedTag, StatusBadge, StepProgress } from "../ui";
 import { frameDifference } from "../guidance-math";
 import type { TaskController } from "../controller";
 import { useClientMode } from "../TaskClientProvider";
@@ -135,7 +135,7 @@ export function SessionScreen({
     checking.current = false;
   }, [capture, hands.tipRef, hands.lastSeenRef, speech]);
 
-  const onRepeat = () => speech.say(controller.message, "instruction");
+  const onRepeat = () => speech.say(displayMessage(controller), "instruction");
 
   const onPauseToggle = () => {
     if (status === "paused") controller.resume();
@@ -161,27 +161,27 @@ export function SessionScreen({
   return (
     <section className="flex flex-col gap-5">
       {/* 1. Appliance and routine */}
-      <ScreenTitle onBack={onExit}>
-        {appliance.name}: {routine.name}
-      </ScreenTitle>
-      {appliance.simulated && (
-        <p>
-          <SimulatedTag />
-        </p>
-      )}
+      <div className="flex flex-col gap-1">
+        <BackButton onClick={onExit} />
+        <h1 tabIndex={-1} className="text-2xl font-bold leading-tight">
+          {appliance.name} · {routine.name}
+        </h1>
+        {appliance.simulated && (
+          <p className="mt-1">
+            <SimulatedTag />
+          </p>
+        )}
+      </div>
+      {started && step && <StepProgress current={Math.min(stepIndex + 1, totalSteps)} total={totalSteps} />}
 
       {/* 2. Large current instruction (also spoken) */}
       <Card>
-        {started && step && (
-          <p className="text-lg font-semibold text-muted">
-            Step {Math.min(stepIndex + 1, totalSteps)} of {totalSteps}
-          </p>
-        )}
-        <p className="mt-1 text-[28px] font-bold leading-tight" aria-live="polite">
+        {!started && !camera.error && <SetupIllustration />}
+        <p className="text-[28px] font-bold leading-tight" aria-live="polite">
           {camera.error ? CAMERA_ERROR_TEXT[camera.error] : instruction || "Starting the camera."}
         </p>
         {started && direction && status !== "paused" && (
-          <p className="mt-3 text-xl text-primary-dark" aria-hidden="true">
+          <p className="mt-3 text-xl font-bold text-link" aria-hidden="true">
             {direction}
           </p>
         )}
@@ -207,14 +207,14 @@ export function SessionScreen({
       )}
       {hands.error && (
         <p className="text-lg font-semibold text-bad" role="alert">
-          {hands.error} You can still press the button yourself and tap Check action.
+          {hands.error} You can still press the button yourself and tap Check.
         </p>
       )}
 
       {/* 5. Actions */}
       {!started ? (
         <div className="flex flex-col gap-3">
-          <p className="text-lg text-muted">Rest the phone on a stand facing the panel, about one to two feet away.</p>
+          <p className="text-lg text-muted">Rest the phone on a stand facing the panel, about one to two feet away. Good light helps.</p>
           {status === "paused" ? (
             <Button onClick={() => controller.resume()}>Scan again</Button>
           ) : (
@@ -226,11 +226,11 @@ export function SessionScreen({
       ) : (
         <div className="flex flex-col gap-3">
           <Button onClick={onCheck} disabled={!canCheck} className="min-h-20 text-2xl">
-            {preparingCheck || status === "checking" ? "Checking…" : "Check action"}
+            {preparingCheck || status === "checking" ? "Checking…" : "Check"}
           </Button>
           <div className="grid grid-cols-2 gap-3">
             <Button variant="secondary" onClick={onRepeat}>
-              Repeat instruction
+              Repeat
             </Button>
             <Button variant="secondary" onClick={onPauseToggle} disabled={status === "checking" || status === "scanning"}>
               {status === "paused" ? (controller.pauseReason === "unexpected" ? "Resume this step" : "Resume") : "Pause"}
@@ -248,7 +248,7 @@ export function SessionScreen({
         <label className="flex min-h-12 items-center gap-3 text-lg">
           <input
             type="checkbox"
-            className="h-6 w-6"
+            className="h-6 w-6 accent-[var(--primary)]"
             checked={speech.enabled}
             onChange={(e) => speech.setEnabled(e.target.checked)}
           />
@@ -256,7 +256,7 @@ export function SessionScreen({
         </label>
         {started && (
           <label className="flex min-h-12 items-center gap-3 text-lg">
-            <input type="checkbox" className="h-6 w-6" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
+            <input type="checkbox" className="h-6 w-6 accent-[var(--primary)]" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />
             Outline every detected control
           </label>
         )}
@@ -287,12 +287,30 @@ function SetupStatus({ controller }: { controller: TaskController }) {
         : "Looking for the panel…";
   return (
     <p
-      className={`inline-flex items-center gap-2 self-start rounded-full px-4 py-2 text-lg font-semibold ${
-        panelReady ? "bg-green-50 text-good" : "bg-slate-100 text-ink"
+      className={`inline-flex items-center gap-2 self-start rounded-full px-4 py-2 text-lg font-bold ${
+        panelReady ? "bg-good-bg text-good" : "bg-soft text-on-soft"
       }`}
     >
       <span aria-hidden="true">{panelReady ? "✓" : "…"}</span>
-      Status: {text}
+      <span className="sr-only">Status: </span>
+      {text}
     </p>
+  );
+}
+
+/** Phone on a stand facing a panel: how to set up, at a glance. */
+function SetupIllustration() {
+  return (
+    <svg width="100%" height="88" viewBox="0 0 260 88" className="mb-3" aria-hidden="true">
+      <rect x="150" y="10" width="96" height="68" rx="12" fill="var(--soft)" stroke="var(--line)" strokeWidth="2" />
+      <rect x="164" y="22" width="40" height="14" rx="3" fill="var(--card)" />
+      {[0, 1, 2].map((c) =>
+        [0, 1].map((r) => <circle key={`${c}-${r}`} cx={170 + c * 16} cy={50 + r * 14} r="5" fill="var(--primary)" opacity={c === 2 && r === 1 ? 1 : 0.35} />),
+      )}
+      <path d="M118 44h22" stroke="var(--muted)" strokeWidth="2" strokeDasharray="4 4" />
+      <rect x="62" y="14" width="40" height="64" rx="8" fill="var(--card)" stroke="var(--ink)" strokeWidth="3" />
+      <circle cx="96" cy="22" r="3" fill="var(--ink)" />
+      <path d="M58 86l14-12M106 86l-14-12" stroke="var(--muted)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
   );
 }
