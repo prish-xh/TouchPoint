@@ -37,12 +37,16 @@ The running UI still uses `components/mock/`; these additions do not change it.
 The future hook should implement the frontend extension before the teammate changes
 `components/controller.ts`. Do not swap it now: the real hook does not exist yet.
 
-## Sponsor integration boundary
+## Sponsor integrations (added after foundation)
 
-`ScanRequest`, `ScanResponse`, and `PerceptionClient` are internal adapter contracts,
-not claimed sponsor API schemas. No real API client, endpoints, or credentials are
-implemented in this milestone. Obtain the selected tracks' official event requirements,
-Perceptron documentation and sample responses before implementing the server adapter.
-Track eligibility and submission evidence remain unverified; mocks are not sponsor usage.
-Keep credentials server-side, validate requests/responses, and do not log camera images.
-Actual appliance expectations and recovery instructions require physical validation.
+Server adapters and authenticated routes now exist for Perceptron localization/OCR,
+Gemini catalog suggestions, and Backboard opt-in preference memory. See
+[the track plan](docs/tracks/PLAN.md) and [setup/handoff](docs/tracks/INTEGRATION.md).
+`createHttpApiClient(token)` shares the mock client's `PerceptionClient` interface.
+The frontend remains unchanged and the real controller is still pending.
+
+No live provider calls, VEYZL audit, cloud deployment or track submissions have been
+performed. Credentials, event entitlement, and actual-appliance validation remain
+required. Perceptron verification currently always returns uncertain; the simulated
+catalog cannot authorize live guidance. Public API documentation sources are linked
+in the track plan. No undocumented sponsor endpoints were invented.

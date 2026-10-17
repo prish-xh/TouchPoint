@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { findAppliance } from "@/lib/catalog";
 import { MICROWAVE_BOXES, MICROWAVE_READINGS } from "@/fixtures/microwave";
 import type { PerceptionClient, ScanRequest } from "@/types/touchpoint";
@@ -64,3 +65,44 @@ export function createMockApiClient(scenario: MockScenario = "success"): Percept
     },
   };
 }
+
+/** Browser-facing transport to our routes; never receives a sponsor API key.
+ * The demo access token is private to the operator, not a NEXT_PUBLIC variable.
+ */
+export function createHttpApiClient(token: string, fetcher: typeof fetch = fetch): PerceptionClient {
+  async function post(path: string, request: unknown): Promise<unknown> {
+    const response = await fetcher(path, {
+      method: "POST", cache: "no-store", signal: AbortSignal.timeout(25000),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) throw new ApiClientError("API_FAILURE", "The request failed. Remain on the current step.");
+    return response.json();
+  }
+  return {
+    async scan(request) {
+      const result = scanResponseSchema.parse(await post("/api/scan", request));
+      if (result.captureId !== request.frame.captureId) throw new ApiClientError("API_FAILURE", "Stale scan response.");
+      return result;
+    },
+    async verify(request) {
+      const result = verifyResponseSchema.parse(await post("/api/verify", request));
+      if (result.captureId !== request.frame.captureId || result.stepId !== request.stepId) {
+        throw new ApiClientError("API_FAILURE", "Stale verification response.");
+      }
+      return result;
+    },
+  };
+}
+
+const scanResponseSchema = z.object({
+  captureId: z.string(), panelReady: z.boolean(), missingControls: z.array(z.string()), message: z.string(),
+  controls: z.array(z.object({
+    controlId: z.string(), label: z.string(), x: z.number().min(0).max(1), y: z.number().min(0).max(1),
+    w: z.number().positive().max(1), h: z.number().positive().max(1),
+  }).refine((c) => c.x + c.w <= 1 && c.y + c.h <= 1)),
+});
+const verifyResponseSchema = z.object({
+  captureId: z.string(), stepId: z.string(), result: z.enum(["matched", "mismatched", "uncertain"]),
+  observed: z.string().nullable(), message: z.string(),
+});
