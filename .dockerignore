@@ -1,0 +1,7 @@
+node_modules
+.next
+.git
+.env*
+*.zip
+.DS_Store
+*.tsbuildinfo
