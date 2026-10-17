@@ -22,13 +22,13 @@ export function DevPanel({
   onFakeOnTarget: () => void;
 }) {
   return (
-    <details className="rounded-2xl border-2 border-dashed border-warn bg-amber-50 p-4">
+    <details className="rounded-2xl border-2 border-dashed border-warn bg-warn-bg p-4">
       <summary className="min-h-12 cursor-pointer text-lg font-semibold text-warn">Mock test controls</summary>
       <div className="mt-3 flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-lg">
           Result of the next check
           <select
-            className="min-h-12 rounded-xl border-2 border-ink/60 bg-white px-3 text-lg"
+            className="min-h-12 rounded-xl border-2 border-outline bg-card px-3 text-lg text-ink"
             value={scenario}
             onChange={(e) => setScenario(e.target.value as MockScenario)}
           >
@@ -42,7 +42,7 @@ export function DevPanel({
         <button
           type="button"
           onClick={onFakeOnTarget}
-          className="min-h-12 rounded-xl border-2 border-ink/60 bg-white px-4 text-lg font-semibold"
+          className="min-h-12 rounded-xl border-2 border-outline bg-card px-4 text-lg font-bold text-ink"
         >
           Pretend my finger is on target
         </button>
