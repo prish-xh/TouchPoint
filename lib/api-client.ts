@@ -95,14 +95,14 @@ export function createHttpApiClient(token: string, fetcher: typeof fetch = fetch
   };
 }
 
-const scanResponseSchema = z.object({
+export const scanResponseSchema = z.object({
   captureId: z.string(), panelReady: z.boolean(), missingControls: z.array(z.string()), message: z.string(),
   controls: z.array(z.object({
     controlId: z.string(), label: z.string(), x: z.number().min(0).max(1), y: z.number().min(0).max(1),
     w: z.number().positive().max(1), h: z.number().positive().max(1),
   }).refine((c) => c.x + c.w <= 1 && c.y + c.h <= 1)),
 });
-const verifyResponseSchema = z.object({
+export const verifyResponseSchema = z.object({
   captureId: z.string(), stepId: z.string(), result: z.enum(["matched", "mismatched", "uncertain"]),
   observed: z.string().nullable(), message: z.string(),
 });
