@@ -72,3 +72,21 @@ describe("shared foundation", () => {
     expect((await client.verify({ ...request, stepId: "press_3" })).result).toBe("matched");
   });
 });
+
+describe("HTTP adapter", () => {
+  it("rejects stale verification before a controller can consume it", async () => {
+    const { createHttpApiClient } = await import("@/lib/api-client");
+    const fetcher = (async () => Response.json({ captureId: "old", stepId: "press_3", result: "matched", observed: "0:03", message: "OK" })) as typeof fetch;
+    await expect(createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_3" })).rejects.toThrow("Stale");
+  });
+  it("accepts validated matching responses", async () => {
+    const { createHttpApiClient } = await import("@/lib/api-client");
+    const fetcher = (async () => Response.json({ captureId: "capture-1", stepId: "press_3", result: "uncertain", observed: null, message: "Cannot confirm" })) as typeof fetch;
+    expect((await createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_3" })).result).toBe("uncertain");
+  });
+  it("rejects malformed scan coordinates", async () => {
+    const { createHttpApiClient } = await import("@/lib/api-client");
+    const fetcher = (async () => Response.json({ captureId: "capture-1", panelReady: true, missingControls: [], message: "OK", controls: [{ controlId: "digit_3", label: "3", x: 0.9, y: 0, w: 0.5, h: 0.1 }] })) as typeof fetch;
+    await expect(createHttpApiClient("private-demo-token", fetcher).scan(request)).rejects.toThrow();
+  });
+});
