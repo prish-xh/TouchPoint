@@ -64,9 +64,10 @@ For multiple users, replace the fixed IDs with an authenticated ownership mappin
 
 `createHttpApiClient(demoToken)` in lib/api-client.ts implements the same
 PerceptionClient as the mock client. It validates server responses and capture/step IDs.
-The real controller is still pending and must prevent overlapping requests, stale
-updates and progression on uncertain results. The teammate should connect the routes
-only after the controller and physical profile rules are ready. Gemini suggestion and
+The real controller now prevents overlapping requests, stale updates and progression
+on uncertain results. Configure its TaskClientContext with a stable client; see
+BACKEND.md for the bridge type alias and provider example. The teammate should connect
+live guidance only after physical profile rules are ready. Gemini suggestion and
 Backboard settings additionally need teammate-owned UI, including confirmation/consent.
 The current page still uses components/mock and is not a live sponsor demonstration.
 

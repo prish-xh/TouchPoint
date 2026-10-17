@@ -21,8 +21,8 @@ System facts for the auditor:
 - Malformed/truncated output and service failures fail closed; no image logging is added.
 - The running frontend still uses its existing mock controller.
 
-Known work before public release: physically checked profiles, real controller race/
-pause tests, user authentication and quotas, provider-retention disclosure and consent,
+Known work before public release: physically checked profiles, live controller/phone integration testing,
+user authentication and quotas, provider-retention disclosure and consent,
 phone and screen-reader testing, and actual account-backed sponsor integration testing.
 These are engineering observations, not findings attributed to VEYZL. No compliance
 certification or conformance to EU AI Act/NIST/ISO is claimed.
