@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { findAppliance } from "@/lib/catalog";
-import { MICROWAVE_BOXES, MICROWAVE_READINGS } from "@/fixtures/microwave";
+import { APPLIANCE_FIXTURES } from "@/fixtures/appliances";
 import type { PerceptionClient, ScanRequest } from "@/types/touchpoint";
 
 export type MockScenario = "success" | "missed_press" | "wrong_setting" | "unreadable" | "api_failure";
@@ -35,7 +35,7 @@ export function createMockApiClient(scenario: MockScenario = "success"): Percept
       const { appliance, routine } = resolveRequest(request);
       failIfRequested();
       const controls = scenario === "unreadable" ? [] : appliance.controls.map((control) => ({
-        controlId: control.id, label: control.label, ...MICROWAVE_BOXES[control.id],
+        controlId: control.id, label: control.label, ...APPLIANCE_FIXTURES[appliance.id].boxes[control.id],
       }));
       const missingControls = [...new Set(routine.steps.map((step) => step.controlId))]
         .filter((id) => !controls.some((control) => control.controlId === id));
@@ -46,15 +46,15 @@ export function createMockApiClient(scenario: MockScenario = "success"): Percept
       };
     },
     async verify(request) {
-      const { routine } = resolveRequest(request);
+      const { appliance, routine } = resolveRequest(request);
       const step = routine.steps.find((item) => item.id === request.stepId);
       if (!step) throw new ApiClientError("INVALID_REQUEST", "Step does not belong to the selected routine.");
       failIfRequested();
-      const reading = MICROWAVE_READINGS[step.id];
+      const reading = APPLIANCE_FIXTURES[appliance.id].readings[step.id];
       const result = scenario === "success" ? "matched" : scenario === "unreadable" ? "uncertain" : "mismatched";
       const observed = scenario === "unreadable" ? null
         : scenario === "success" ? reading.expected
-        : scenario === "wrong_setting" ? "The display shows 1:00." : reading.previous;
+        : scenario === "wrong_setting" ? reading.wrong : reading.previous;
       return {
         captureId: request.frame.captureId, stepId: step.id, result, observed,
         message: scenario === "success" ? `Demo: ${observed}`
@@ -72,7 +72,7 @@ export function createMockApiClient(scenario: MockScenario = "success"): Percept
 export function createHttpApiClient(token: string, fetcher: typeof fetch = fetch): PerceptionClient {
   async function post(path: string, request: unknown): Promise<unknown> {
     const response = await fetcher(path, {
-      method: "POST", cache: "no-store", signal: AbortSignal.timeout(25000),
+      method: "POST", cache: "no-store", signal: AbortSignal.timeout(65000),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(request),
     });

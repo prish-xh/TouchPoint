@@ -1,30 +1,15 @@
 // Server module: node-only helper dependencies prevent browser use.
 import { z } from "zod";
+import { preparePanelImage, detectionCategory, normalizeDetections } from "@/lib/server/button-detection";
 import { parseProvider, parseProviderText, providerJson, requiredEnv } from "@/lib/server/http";
 import { scanRequestSchema, verifyRequestSchema, selection } from "@/lib/validation";
 import type { PerceptionClient } from "@/types/touchpoint";
 
-const controlSchema = z.object({
-  controlId: z.string().min(1).max(100),
-  x: z.number().min(0).max(1), y: z.number().min(0).max(1),
-  w: z.number().positive().max(1), h: z.number().positive().max(1),
-}).strict().refine((c) => c.x + c.w <= 1 && c.y + c.h <= 1);
-const panelSchema = z.object({ controls: z.array(controlSchema).max(30) }).strict();
 const observationSchema = z.object({ readable: z.boolean(), displayText: z.string().max(200).nullable() }).strict();
 const envelopeSchema = z.object({ choices: z.array(z.object({
   finish_reason: z.literal("stop"),
   message: z.object({ content: z.string().max(30000), tool_calls: z.array(z.unknown()).max(0).optional() }),
 })).length(1) });
-const scanJsonSchema = {
-  type: "object", additionalProperties: false, required: ["controls"], properties: {
-    controls: { type: "array", items: { type: "object", additionalProperties: false,
-      required: ["controlId", "x", "y", "w", "h"], properties: {
-        controlId: { type: "string" }, x: { type: "number", minimum: 0, maximum: 1 },
-        y: { type: "number", minimum: 0, maximum: 1 }, w: { type: "number", minimum: 0, maximum: 1 },
-        h: { type: "number", minimum: 0, maximum: 1 },
-      } } },
-  },
-};
 const observationJsonSchema = {
   type: "object", additionalProperties: false, required: ["readable", "displayText"],
   properties: { readable: { type: "boolean" }, displayText: { type: ["string", "null"] } },
@@ -48,16 +33,14 @@ export function createPerceptronClient(fetcher: typeof fetch = fetch): Perceptio
     async scan(input) {
       const request = scanRequestSchema.parse(input);
       const { appliance, routine } = selection(request.applianceId, request.routineId);
-      const text = await infer(request.frame.dataUrl,
-        `Locate only clearly visible controls from this list: ${JSON.stringify(appliance.controls)}. Return controlId and bounding boxes x,y,w,h normalized 0 to 1 in the original unmirrored image, origin top-left. Omit uncertain controls.`, scanJsonSchema);
-      const detected = parseProviderText(panelSchema, text).controls;
-      const counts = new Map<string, number>();
-      for (const c of detected) counts.set(c.controlId, (counts.get(c.controlId) ?? 0) + 1);
-      const ids = new Set<string>();
-      const controls = detected.filter((c) => {
-        if (!appliance.controls.some((known) => known.id === c.controlId) || counts.get(c.controlId) !== 1) return false;
-        ids.add(c.controlId); return true;
-      }).map((c) => ({ ...c, label: appliance.controls.find((known) => known.id === c.controlId)!.label }));
+      const image = await preparePanelImage(request.frame.dataUrl);
+      const raw = await providerJson("https://api.perceptron.inc/v1/detect", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${requiredEnv("PERCEPTRON_API_KEY")}` },
+        body: JSON.stringify({ media: { type: "image", image_url: image.dataUrl },
+          categories: appliance.controls.map(detectionCategory), config: { output: "box", reasoning_effort: "none" } }),
+      }, fetcher, 60000);
+      const controls = normalizeDetections(raw, appliance.controls, image.width, image.height);
+      const ids = new Set(controls.map((c) => c.controlId));
       const missingControls = [...new Set(routine.steps.map((s) => s.controlId))].filter((id) => !ids.has(id));
       return { captureId: request.frame.captureId, controls, missingControls,
         // Current catalog is simulated. Detection can be inspected, never used as approved guidance.
@@ -72,8 +55,9 @@ export function createPerceptronClient(fetcher: typeof fetch = fetch): Perceptio
       if (!routine.steps.some((s) => s.id === request.stepId)) {
         throw new z.ZodError([{ code: "custom", path: ["stepId"], message: "Unsupported step" }]);
       }
-      const observation = parseProviderText(observationSchema, await infer(request.frame.dataUrl,
-        "Read the appliance display exactly. Return readable false and displayText null when uncertain. Do not decide whether an action succeeded.", observationJsonSchema));
+      const image = await preparePanelImage(request.frame.dataUrl);
+      const observation = parseProviderText(observationSchema, await infer(image.dataUrl,
+        `Read only the visible display/selected indicators for this ${request.applianceId}. For laundry include the visibly selected cycle and temperature, not merely printed labels. Return readable false and displayText null when uncertain. Do not decide whether an action succeeded.`, observationJsonSchema));
       // There are no physically checked verification rules yet. OCR alone cannot prove a press.
       return { captureId: request.frame.captureId, stepId: request.stepId, result: "uncertain",
         observed: observation.readable ? observation.displayText : null,
