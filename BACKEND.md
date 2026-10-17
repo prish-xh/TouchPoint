@@ -1,12 +1,12 @@
 # Shared foundation handoff
 
-This milestone adds shared types, a public catalog with one simulated microwave routine,
+This milestone adds shared types, a public catalog with simulated microwave, laundry and stove-timer routines,
 and an offline mock perception client. It does not connect or modify the frontend.
 
 - `types/touchpoint.ts`: existing frontend domain shapes promoted unchanged; original
   `TaskController` contract plus `FrontendTaskController` with the frontend's additions:
   `startGuidance`, `busy`, `pauseReason`, and `missingControls`.
-- `lib/catalog.ts`: `APPLIANCES` and `findAppliance`. Only microwave is supported here.
+- `lib/catalog.ts`: `APPLIANCES` and `findAppliance`. All three simulated profiles are supported.
 - `profiles/microwave.ts`: SIM-MW1, routine `set_30_seconds`, steps `press_3`,
   `press_0`, `press_start`. IDs match the frontend mock.
 - `fixtures/microwave.ts`: synthetic bounding boxes and readings. These are not checked
@@ -99,3 +99,10 @@ No frontend files were edited or switched. The current live adapter still return
 uncertain verification and panelReady=false for simulated profiles. Keep that gate
 until actual appliance observations and per-step verification criteria are checked.
 No paid API calls are used by controller tests.
+
+## Additional appliances and native detection
+
+See [appliance profiles](docs/APPLIANCE-PROFILES.md) for laundry/stove backend routines,
+fixture scenarios and live-validation requirements. Scan now uses Perceptron's native
+pixel-box detector with backend orientation normalization, while OCR uses chat
+completions. Live results and latency are documented in the photo-test report.

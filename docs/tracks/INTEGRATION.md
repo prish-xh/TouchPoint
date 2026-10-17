@@ -21,7 +21,7 @@ public access. Do not embed the demo token in source or share it with the public
 
 Images must be base64 JPEG/PNG data URLs under 3 million characters. Only supported
 catalog IDs are accepted. Requests and provider responses have size bounds; upstream
-calls have 20-second timeouts. Upstream error content is never returned or logged.
+calls have 20-second timeouts except detection (60 seconds). Upstream error content is never returned or logged.
 Our app does not persist camera images. Providers receive live request contents and
 have their own retention policies: review those and disclose uploads before real use.
 
@@ -29,8 +29,8 @@ have their own retention policies: review those and disclose uploads before real
 
 Set the event key and a model your account can access. Current public docs show
 `perceptron-mk1.5`; confirm with the workshop before using an event-specific model.
-The adapter uses official chat completions with JSON Schema. The JSON fields for
-controls/OCR are our requested output, not a claimed native provider response schema.
+Scan uses the official /v1/detect endpoint and converts its pixel boxes after backend
+orientation normalization. OCR uses chat completions with our requested JSON Schema.
 Test scan on an appliance photo and compare every box to the actual image. Duplicate,
 unknown, or out-of-frame controls cannot be used for guidance. A simulated profile
 never returns panelReady=true. Verification reads text but always returns uncertain
