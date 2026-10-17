@@ -1,7 +1,6 @@
-// TEMPORARY. Mirrors the proposed shared contract until the teammate's
-// types/touchpoint.ts and hooks/useTaskController.ts land. When they do, point
-// components/controller.ts at the real ones and delete this folder.
-//
+// Frozen copy of the contract the frontend was built against.
+// Kept only because tests/api-client.test.ts checks that the real
+// FrontendTaskController still matches it. The app no longer imports this folder.
 // Coordinates: unmirrored camera frame, normalized 0-1, origin top-left.
 
 export type Box = { x: number; y: number; w: number; h: number };

@@ -1,6 +1,6 @@
 "use client";
 
-// Mock-mode testing aid. Hidden when the real controller is connected (IS_MOCK = false).
+// Demo-mode testing aid (offline mock client only). Hidden in live mode (?live).
 
 import type { MockScenario } from "../controller";
 

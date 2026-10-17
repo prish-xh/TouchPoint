@@ -5,7 +5,10 @@
 // This page only decides which screen to show and speaks what the controller says.
 
 import { useEffect, useRef, useState } from "react";
-import { APPLIANCES, IS_MOCK, useTaskController } from "@/components/controller";
+import { APPLIANCES, useTaskController } from "@/components/controller";
+import { TaskClientProvider, useClientMode } from "@/components/TaskClientProvider";
+import { displayMessage } from "@/components/message";
+import { DemoAccess } from "@/components/screens/DemoAccess";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { RoutineScreen } from "@/components/screens/RoutineScreen";
 import { SessionScreen } from "@/components/screens/SessionScreen";
@@ -15,7 +18,17 @@ import { useSpeech } from "@/hooks/useSpeech";
 type Screen = "home" | "routine" | "session" | "result";
 
 export default function Page() {
+  // The client provider must sit above the component that calls useTaskController().
+  return (
+    <TaskClientProvider>
+      <App />
+    </TaskClientProvider>
+  );
+}
+
+function App() {
   const controller = useTaskController();
+  const mode = useClientMode();
   const speech = useSpeech();
   const [screen, setScreen] = useState<Screen>("home");
   const [applianceId, setApplianceId] = useState<string | null>(null);
@@ -25,11 +38,12 @@ export default function Page() {
   const lastSpoken = useRef("");
   useEffect(() => {
     if (screen !== "session" && screen !== "result") return;
-    if (controller.message && controller.message !== lastSpoken.current) {
-      lastSpoken.current = controller.message;
-      speech.say(controller.message, "instruction");
+    const text = displayMessage(controller);
+    if (text && text !== lastSpoken.current) {
+      lastSpoken.current = text;
+      speech.say(text, "instruction");
     }
-  }, [controller.message, screen, speech]);
+  }, [controller, screen, speech]);
 
   // Completion only comes from the controller (a verified match on the last step).
   useEffect(() => {
@@ -52,13 +66,19 @@ export default function Page() {
 
   return (
     <main ref={mainRef} className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 pb-10 pt-[max(1rem,env(safe-area-inset-top))]">
-      {IS_MOCK && (
+      {mode.live ? (
+        <p className="rounded-xl border border-good bg-green-50 px-4 py-2 text-base font-semibold text-good">
+          Live mode: the panel is read by the camera.
+        </p>
+      ) : (
         <p className="rounded-xl border border-warn bg-amber-50 px-4 py-2 text-base font-semibold text-warn">
-          Mock mode: scan and check results are simulated, not read from the panel.
+          Demo mode: scan and check results are simulated, not read from the panel.
         </p>
       )}
 
-      {screen === "home" && (
+      {screen === "home" && mode.live && <DemoAccess />}
+
+      {screen === "home" && (!mode.live || mode.hasToken) && (
         <HomeScreen
           appliances={APPLIANCES}
           onChoose={(id) => {

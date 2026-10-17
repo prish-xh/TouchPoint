@@ -8,7 +8,9 @@ import { CameraView } from "../CameraView";
 import { DevPanel } from "./DevPanel";
 import { Button, Card, ScreenTitle, SimulatedTag, StatusBadge } from "../ui";
 import { frameDifference } from "../guidance-math";
-import { IS_MOCK, type MockScenario, type TaskController } from "../controller";
+import type { TaskController } from "../controller";
+import { useClientMode } from "../TaskClientProvider";
+import { displayMessage } from "../message";
 import { CAMERA_ERROR_TEXT, useCamera } from "@/hooks/useCamera";
 import { useHandTracking } from "@/hooks/useHandTracking";
 import { useGuidance } from "@/hooks/useGuidance";
@@ -22,9 +24,7 @@ const HAND_CLEAR_TIMEOUT_MS = 4000;
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-type Controller = TaskController & {
-  dev?: { scenario: MockScenario; setScenario: (s: MockScenario) => void };
-};
+type Controller = TaskController;
 
 export function SessionScreen({
   controller,
@@ -39,6 +39,7 @@ export function SessionScreen({
   const [preparingCheck, setPreparingCheck] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
+  const mode = useClientMode();
   const camera = useCamera(true);
   const hands = useHandTracking(camera.videoRef, camera.ready);
   const { direction } = useGuidance({
@@ -60,7 +61,8 @@ export function SessionScreen({
   const refThumb = useRef<Uint8Array | null>(null);
   const scanThumb = useRef<Uint8Array | null>(null);
   useEffect(() => {
-    if (!cameraReady || status !== "scanning") return;
+    // The controller ignores scans once the panel is ready, so stop capturing then.
+    if (!cameraReady || status !== "scanning" || panelReady) return;
     let stopped = false;
     const tick = async () => {
       if (stopped || ctl.current.busy || ctl.current.status !== "scanning") return;
@@ -74,7 +76,7 @@ export function SessionScreen({
       stopped = true;
       clearInterval(id);
     };
-  }, [cameraReady, capture, grabThumb, status]);
+  }, [cameraReady, capture, grabThumb, status, panelReady]);
 
   // The frame that produced the current panel map is the reference for movement detection.
   useEffect(() => {
@@ -149,7 +151,7 @@ export function SessionScreen({
   // ---- view ----
   const totalSteps = routine?.steps.length ?? 0;
   const canCheck = started && !busy && !preparingCheck && ["guiding", "on_target", "retry"].includes(status);
-  const instruction = preparingCheck ? "Move your hand aside. Checking the display." : controller.message;
+  const instruction = preparingCheck ? "Move your hand aside. Checking the display." : displayMessage(controller);
   const cameraDescription = targetControl
     ? `Camera preview. The target, ${targetControl.label}, is outlined.`
     : "Camera preview of the appliance panel.";
@@ -213,9 +215,13 @@ export function SessionScreen({
       {!started ? (
         <div className="flex flex-col gap-3">
           <p className="text-lg text-muted">Rest the phone on a stand facing the panel, about one to two feet away.</p>
-          <Button onClick={startGuidance} disabled={!panelReady || !!camera.error}>
-            {panelReady ? "Start guidance" : "Finding the panel…"}
-          </Button>
+          {status === "paused" ? (
+            <Button onClick={() => controller.resume()}>Scan again</Button>
+          ) : (
+            <Button onClick={startGuidance} disabled={!panelReady || !!camera.error}>
+              {panelReady ? "Start guidance" : "Finding the panel…"}
+            </Button>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -227,7 +233,7 @@ export function SessionScreen({
               Repeat instruction
             </Button>
             <Button variant="secondary" onClick={onPauseToggle} disabled={status === "checking" || status === "scanning"}>
-              {status === "paused" ? "Resume" : "Pause"}
+              {status === "paused" ? (controller.pauseReason === "unexpected" ? "Resume this step" : "Resume") : "Pause"}
             </Button>
           </div>
           {status === "paused" && controller.pauseReason === "unexpected" && (
@@ -256,10 +262,10 @@ export function SessionScreen({
         )}
       </div>
 
-      {IS_MOCK && controller.dev && started && (
+      {!mode.live && started && (
         <DevPanel
-          scenario={controller.dev.scenario}
-          setScenario={controller.dev.setScenario}
+          scenario={mode.scenario}
+          setScenario={mode.setScenario}
           onFakeOnTarget={() => {
             speech.chime();
             controller.reportTargetReached();
