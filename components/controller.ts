@@ -1,17 +1,13 @@
-// THE ONE SWAP POINT between this UI and the teammate's controller.
-//
-// Today: the temporary mock in components/mock/.
-// When the teammate's files land, change these lines to:
-//   export { useTaskController } from "@/hooks/useTaskController";
-//   export type { ... } from "@/types/touchpoint";
-//   export { APPLIANCES } from "<their catalog module>";
-//   export const IS_MOCK = false;
-// Then delete components/mock/. No screen should import from components/mock directly.
+// THE ONE SWAP POINT between the UI and the controller.
+// Now wired to the real controller (hooks/useTaskController.ts) and shared types.
+// Which perception client it talks to (offline demo vs live API) is chosen in
+// components/TaskClientProvider.tsx.
 
-export { useMockTaskController as useTaskController } from "./mock/useMockTaskController";
-export type { MockScenario } from "./mock/useMockTaskController";
+export { useTaskController, TaskClientContext } from "@/hooks/useTaskController";
 export type {
-  Appliance, Box, DetectedControl, Frame, PauseReason, Point, Routine, Step, TaskController, TaskStatus, VerifyResponse,
-} from "./mock/contract";
-export { MOCK_APPLIANCES as APPLIANCES } from "./mock/catalog";
-export const IS_MOCK = true;
+  Appliance, Box, DetectedControl, Frame, PauseReason, Point, Routine, Step, TaskStatus, VerifyResponse,
+} from "@/types/touchpoint";
+// The UI needs the frontend extension (startGuidance, busy, pauseReason, missingControls).
+export type { FrontendTaskController as TaskController } from "@/types/touchpoint";
+export type { MockScenario } from "@/lib/api-client";
+export { APPLIANCES } from "@/lib/catalog";
