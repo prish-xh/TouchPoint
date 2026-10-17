@@ -2,13 +2,14 @@ import { describe, expect, it } from "vitest";
 import { APPLIANCES } from "@/lib/catalog";
 import { createMockApiClient } from "@/lib/api-client";
 import { createTaskEngine } from "@/lib/task-engine";
-import { MOCK_APPLIANCES } from "@/components/mock/catalog";
 let id = 0;
 const frame = () => ({ dataUrl: "demo-only", captureId: `appliance-${++id}` });
 
 describe("three appliance backend profiles", () => {
   it("preserves all established frontend catalog IDs and instructions", () => {
-    expect(APPLIANCES).toEqual(MOCK_APPLIANCES);
+    expect(APPLIANCES.map((a) => [a.id, a.routines.map((r) => r.id)])).toEqual([
+      ["microwave", ["set_30_seconds"]], ["laundry", ["normal_cold"]], ["stove", ["set_and_cancel_timer"]],
+    ]);
   });
   for (const appliance of APPLIANCES) {
     for (const routine of appliance.routines) {

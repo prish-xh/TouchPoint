@@ -183,9 +183,12 @@ describe("response validation", () => {
   });
   it("honors provider panelReady=false even when all controls exist", async () => {
     const mock = createMockApiClient();
-    const engine = createTaskEngine({ ...mock, scan: async (req) => ({ ...await mock.scan(req), panelReady: false }) });
+    const scan = vi.fn(async (req: Parameters<typeof mock.scan>[0]) => ({ ...await mock.scan(req), panelReady: false }));
+    const engine = createTaskEngine({ ...mock, scan });
     engine.selectRoutine("microwave", "set_30_seconds"); await engine.scanFrame(frame()); engine.startGuidance();
-    expect(engine.getSnapshot().status).toBe("scanning");
+    expect(engine.getSnapshot().status).toBe("paused");
+    await engine.scanFrame(frame());
+    expect(scan).toHaveBeenCalledTimes(1);
   });
   it.each(["duplicate", "unknown", "bounds", "identity"])("rejects invalid scan %s", async (kind) => {
     const mock = createMockApiClient();

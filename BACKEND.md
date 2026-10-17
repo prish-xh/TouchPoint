@@ -106,3 +106,13 @@ See [appliance profiles](docs/APPLIANCE-PROFILES.md) for laundry/stove backend r
 fixture scenarios and live-validation requirements. Scan now uses Perceptron's native
 pixel-box detector with backend orientation normalization, while OCR uses chat
 completions. Live results and latency are documented in the photo-test report.
+
+## Integration branch update
+
+The latest main already connects the frontend to the real hook via TaskClientProvider.
+This backend update preserves those files unchanged. The earlier handoff instructions
+above describe the original foundation stage, not an outstanding frontend switch.
+Default mode is explicit mock perception; ?live uses the protected backend routes.
+A complete detected map with panelReady=false now pauses instead of repeatedly scanning
+an unapproved profile. Physically checked rules and phone tests are still required.
+GitHub Actions now runs tests, typecheck, and build on PRs; no provider keys are required.
