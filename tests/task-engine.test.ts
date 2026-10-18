@@ -219,4 +219,5 @@ it("retains nonvisual correction through retry and target arrival",async()=>{
  expect(engine.getSnapshot().message).toBe("Move your hand aside. Do not press again.");
  engine.reportTargetReached();
  expect(engine.getSnapshot().message).toContain("Do not press again");
+ expect(engine.getSnapshot().step?.instruction).toBe("Move your hand aside. Do not press again.");
 });

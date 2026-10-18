@@ -22,6 +22,11 @@ export function createTaskEngine(client: PerceptionClient, catalog: Appliance[] 
   function update(patch: Partial<TaskSnapshot>) {
     const next = { ...state, ...patch };
     next.step = next.routine?.steps[next.stepIndex] ?? null;
+    // Frontend on-target speech uses step.instruction. Preserve the current correction
+    // there too, without mutating the catalog or requiring a presentation change.
+    if (next.step && next.lastResult?.stepId === next.step.id && next.lastResult.result !== "matched") {
+      next.step = { ...next.step, instruction: next.lastResult.message };
+    }
     next.targetControl = next.panelReady && next.step
       ? next.controls.find((c) => c.controlId === next.step!.controlId) ?? null : null;
     state = next;
