@@ -1,5 +1,6 @@
 // Server module: node-only helper dependencies prevent browser use.
 import { z } from "zod";
+import { microwaveObservationSchema, microwaveObservationJsonSchema, microwaveObservationPrompt, evaluateMicrowave } from "@/lib/server/microwave-verification";
 import { laundryObservationSchema, laundryObservationJsonSchema, laundryObservationPrompt, evaluateLaundry } from "@/lib/server/laundry-verification";
 import { preparePanelImage, detectionCategory, normalizeDetections } from "@/lib/server/button-detection";
 import { parseProvider, parseProviderText, providerJson, requiredEnv } from "@/lib/server/http";
@@ -44,19 +45,29 @@ export function createPerceptronClient(fetcher: typeof fetch = fetch): Perceptio
       const ids = new Set(controls.map((c) => c.controlId));
       const missingControls = [...new Set(routine.steps.map((s) => s.controlId))].filter((id) => !ids.has(id));
       // Explicit deployment scope: never enable another washer merely from similar controls.
-      const enabled = request.applianceId === "laundry" &&
-        process.env.TOUCHPOINT_LIVE_WASHER_MODEL === "GFW550SSN5WW";
+      const enabled = (request.applianceId === "laundry" && process.env.TOUCHPOINT_LIVE_WASHER_MODEL === "GFW550SSN5WW") ||
+        (request.applianceId === "microwave" && process.env.TOUCHPOINT_LIVE_MICROWAVE_MODEL === "JVM3160RF9SS");
+      if (request.applianceId === "microwave") {
+        if (!enabled) return { captureId: request.frame.captureId, controls, missingControls,
+          panelReady: false, message: "Live microwave demo requires server setting TOUCHPOINT_LIVE_MICROWAVE_MODEL=JVM3160RF9SS." };
+        if (missingControls.length === 0) {
+          const o = parseProviderText(microwaveObservationSchema, await infer(image.dataUrl, microwaveObservationPrompt, microwaveObservationJsonSchema));
+          const idle = o.readable && o.mode === "clock" && !o.cookIndicatorLit;
+          return { captureId: request.frame.captureId, controls, missingControls, panelReady: idle,
+            message: idle ? "Idle microwave panel found. This routine adds 30 seconds once."
+              : "I cannot confirm an idle microwave. Do not add time. Pause and check the appliance before restarting." };
+        }
+      }
       if (request.applianceId === "laundry") {
         if (!enabled) return { captureId: request.frame.captureId, controls, missingControls,
           panelReady: false, message: "Live washer demo is not configured for GE GFW550SSN5WW." };
         if (missingControls.length === 0) {
           const observation = parseProviderText(laundryObservationSchema, await infer(image.dataUrl,
             laundryObservationPrompt, laundryObservationJsonSchema));
-          const visible = observation.panelVisible && observation.poweredOn &&
-            observation.cycleEvidence === "dial_light" && observation.selectedCycle !== "unknown";
+          const visible = observation.panelVisible && observation.powerEvidence !== "unknown";
           return { captureId: request.frame.captureId, controls, missingControls, panelReady: visible,
             message: visible ? "Washer panel ready. This routine selects settings only; do not start the wash."
-              : "Power on the washer and show the full illuminated panel. Resume and scan again." };
+              : "The panel is unclear. Hold the camera steady with the full panel in view, then resume." };
         }
       }
       return { captureId: request.frame.captureId, controls, missingControls,
@@ -72,6 +83,11 @@ export function createPerceptronClient(fetcher: typeof fetch = fetch): Perceptio
         throw new z.ZodError([{ code: "custom", path: ["stepId"], message: "Unsupported step" }]);
       }
       const image = await preparePanelImage(request.frame.dataUrl);
+      if (request.applianceId === "microwave") {
+        const observation = parseProviderText(microwaveObservationSchema, await infer(image.dataUrl,
+          microwaveObservationPrompt, microwaveObservationJsonSchema));
+        return { captureId: request.frame.captureId, stepId: request.stepId, ...evaluateMicrowave(observation) };
+      }
       if (request.applianceId === "laundry") {
         const observation = parseProviderText(laundryObservationSchema, await infer(image.dataUrl,
           laundryObservationPrompt, laundryObservationJsonSchema));

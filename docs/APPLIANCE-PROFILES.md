@@ -102,3 +102,26 @@ The phone camera/tracking/audio interaction is not certified by static-photo tes
 A real provider-backed engine smoke test also passed: scan -> start guidance -> Normal
 check -> Cold check -> done, using IMG_6333.JPG with distinct capture IDs. This uses
 the same already-selected photo; it proves backend wiring, not a physical state change.
+
+## Bug fixes: Power-first and spoken confirmations
+
+Current washer steps are power_on -> select_normal -> select_cold. Scan can accept
+a clearly visible dark panel so the app can guide Power. The first Check determines
+whether a Power press is needed: dark panel requests one press, illuminated panel
+confirms power without toggling it. Unknown visibility never requests a press.
+Normal and Cold are checked before any changes; the user is never asked to read lights.
+The engine preserves verification confirmations in its message for the existing speech
+consumer. Correction messages survive resume and target arrival. No frontend edits.
+
+Microwave deployment now supports TOUCHPOINT_LIVE_MICROWAVE_MODEL=JVM3160RF9SS.
+An idle clock must be observed before guidance. Verification checks a readable Cook
+indicator and 1–30 seconds; Food, timer, unreadable and excess time do not complete.
+This confirms a visible setting only: a still image cannot prove countdown motion,
+press count, exact originally programmed duration, or cooking completion.
+The user confirmed two presses in the supplied video. A real test read 56 seconds
+and rejected it as excess time. The idle video frame passed live scan.
+
+The revised washer detector located Power above Start/Pause on IMG_6331.JPG; an
+overlay was visually checked. Real checks on dark and lit photos produced the expected
+power guidance and confirmation. A single-press microwave success recording and
+physical phone rehearsal remain necessary; no general reliability claim is made.

@@ -28,6 +28,7 @@ export function createTaskEngine(client: PerceptionClient, catalog: Appliance[] 
     listeners.forEach((listener) => listener());
   }
   function instruction() {
+    if (state.lastResult && state.lastResult.stepId === state.step?.id && state.lastResult.result !== "matched") return state.lastResult.message;
     return state.step ? `Step ${state.stepIndex + 1} of ${state.routine!.steps.length}. ${state.step.instruction}` : "Routine complete.";
   }
   function pauseWith(reason: PauseReason, message: string) {
@@ -123,13 +124,13 @@ export function createTaskEngine(client: PerceptionClient, catalog: Appliance[] 
           generation += 1;
           const next = state.stepIndex + 1;
           update({ stepIndex: next, lastResult: result, status: next === routine.steps.length ? "done" : "guiding", pauseReason: null,
-            message: next === routine.steps.length ? "Routine complete." : `Step ${next + 1} of ${routine.steps.length}. ${routine.steps[next].instruction}`,
+            message: `${result.message} ${next === routine.steps.length ? "Routine complete." : `Step ${next + 1} of ${routine.steps.length}. ${routine.steps[next].instruction}`}`,
           });
         } else if (result.result === "mismatched") {
           update({ lastResult: result });
           pauseWith("unexpected", "The result did not match. Review the setting before resuming, or restart this routine.");
         } else {
-          update({ status: "retry", lastResult: result, message: "I cannot confirm that action. Stay on this step and check a fresh image." });
+          update({ status: "retry", lastResult: result, message: result.message });
         }
       } catch {
         if (epoch === generation) update({ status: "retry", message: "The check failed. Stay on this step and try again with a fresh image." });
@@ -137,7 +138,7 @@ export function createTaskEngine(client: PerceptionClient, catalog: Appliance[] 
     },
     reportTargetReached() {
       if ((state.status === "guiding" || state.status === "retry") && state.targetControl) {
-        update({ status: "on_target", message: `On target. ${state.step!.instruction} Then tap Check action.` });
+        update({ status: "on_target", message: `On target. ${instruction()}` });
       }
     },
     reportTrackingLost() {

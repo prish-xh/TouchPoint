@@ -55,15 +55,15 @@ describe("Perceptron adapter", () => {
     await expect(createPerceptronClient(transport(body)).scan(request)).rejects.toMatchObject({ code: "INVALID_PROVIDER_RESPONSE" });
   });
   it("never turns OCR into a confirmed action without checked rules", async () => {
-    const result = await createPerceptronClient(transport(completion({ readable: true, displayText: "0:30" }))).verify({ ...request, stepId: "press_add_30" });
+    const result = await createPerceptronClient(transport(completion({ readable: true, displayText: "0:30", mode: "unknown", cookIndicatorLit: false }))).verify({ ...request, stepId: "press_add_30" });
     expect(result).toMatchObject({ result: "uncertain", observed: "0:30", stepId: "press_add_30", captureId: frame.captureId });
   });
   it("does not expose unreadable text", async () => {
-    const result = await createPerceptronClient(transport(completion({ readable: false, displayText: "guess" }))).verify({ ...request, stepId: "press_add_30" });
+    const result = await createPerceptronClient(transport(completion({ readable: false, displayText: "guess", mode: "unknown", cookIndicatorLit: false }))).verify({ ...request, stepId: "press_add_30" });
     expect(result.observed).toBeNull();
   });
   it("uses structured washer evidence and preserves capture and step identity", async () => {
-    const fetcher = transport(completion({ panelVisible: true, poweredOn: true,
+    const fetcher = transport(completion({ panelVisible: true, poweredOn: true, powerEvidence: "lit_panel",
       selectedCycle: "normal", cycleEvidence: "dial_light", selectedTemperature: "cold",
       temperatureEvidence: "illuminated_selection" }));
     const result = await createPerceptronClient(fetcher).verify({ ...request,
@@ -93,7 +93,7 @@ describe("Gemini routine selection", () => {
   function gemini(ids: unknown) { return transport({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(ids) }] } }] }); }
   it("returns only a catalog choice and requires confirmation", async () => {
     const result = await suggestRoutine({ intent: "Set 30 seconds on the microwave" }, gemini({ applianceId: "microwave", routineId: "set_30_seconds" }));
-    expect(result).toMatchObject({ routineId: "set_30_seconds", requiresConfirmation: true, simulated: true });
+    expect(result).toMatchObject({ routineId: "set_30_seconds", requiresConfirmation: true, simulated: false });
     expect(result).not.toHaveProperty("steps");
   });
   it("rejects hallucinated routines", async () => {
@@ -151,7 +151,7 @@ describe("route boundaries", () => {
     expect(await response.text()).not.toContain("private-host");
   });
   it("serves valid OCR responses via the verify route", async () => {
-    vi.stubGlobal("fetch", transport(completion({ readable: true, displayText: "0:03" })));
+    vi.stubGlobal("fetch", transport(completion({ readable: true, displayText: "0:03", mode: "unknown", cookIndicatorLit: false })));
     const response = await verifyRoute(new Request("http://localhost/api/verify", { method: "POST", headers: { Authorization: "Bearer test-only" }, body: JSON.stringify({ ...request, stepId: "press_add_30" }) }));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ result: "uncertain" });

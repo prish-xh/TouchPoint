@@ -26,7 +26,7 @@ describe("three appliance backend profiles", () => {
           expect(engine.getSnapshot().lastResult?.observed).toBeTruthy();
         }
         expect(engine.getSnapshot().status).toBe("done");
-        expect(appliance.simulated).toBe(appliance.id !== "laundry");
+        expect(appliance.simulated).toBe(appliance.id === "stove");
       });
       it.each(["wrong_setting", "unreadable", "api_failure", "missed_press"] as const)(`${appliance.id}: %s never advances`, async (scenario) => {
         const client = { ...createMockApiClient(), verify: createMockApiClient(scenario).verify };
@@ -40,6 +40,6 @@ describe("three appliance backend profiles", () => {
   }
   it("stove supports only the timer and laundry does not start a wash", () => {
     expect(APPLIANCES.find((a) => a.id === "stove")!.routines.flatMap((r) => r.steps.map((s) => s.id))).toEqual(["open_timer", "add_minute", "start_timer", "cancel_timer"]);
-    expect(APPLIANCES.find((a) => a.id === "laundry")!.routines[0].steps.map((s) => s.id)).toEqual(["select_normal", "select_cold"]);
+    expect(APPLIANCES.find((a) => a.id === "laundry")!.routines[0].steps.map((s) => s.id)).toEqual(["power_on", "select_normal", "select_cold"]);
   });
 });

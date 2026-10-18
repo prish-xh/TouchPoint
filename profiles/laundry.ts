@@ -7,6 +7,7 @@ export const LAUNDRY: Appliance = {
     model: "GE GFW550SSN5WW",
     simulated: false,
     controls: [
+      { id: "power", label: "Power" },
       { id: "cycle_normal", label: "Cycle selector dial" },
       { id: "temp_cold", label: "Temp" },
     ],
@@ -16,8 +17,9 @@ export const LAUNDRY: Appliance = {
         name: "Select Normal + Cold (no wash start)",
         goal: "Select the Normal cycle with cold water.",
         steps: [
-          { id: "select_normal", controlId: "cycle_normal", instruction: "With the washer powered on, turn the cycle dial until the indicator beside Normal is lit. Do not press Start." },
-          { id: "select_cold", controlId: "temp_cold", instruction: "If Cold is already lit in the Temp column, leave it unchanged and check. Otherwise, press Temp once, then check the selection. Do not press Start." },
+          { id: "power_on", controlId: "power", instruction: "Tap Check action first. I will check whether the washer is on before asking you to press Power." },
+          { id: "select_normal", controlId: "cycle_normal", instruction: "Leave the dial unchanged and tap Check action. I will tell you whether Normal is selected. Do not press Start." },
+          { id: "select_cold", controlId: "temp_cold", instruction: "Leave Temp unchanged and tap Check action. I will tell you whether Cold is selected. Do not press Start." },
         ],
       },
     ],

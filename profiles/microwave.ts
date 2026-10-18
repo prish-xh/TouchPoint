@@ -1,11 +1,11 @@
 import type { Appliance } from "@/types/touchpoint";
 
-/** GE panel reference; simulated remains true until live acceptance tests pass. */
+/** Limited GE demo: server opt-in and idle-panel check required. */
 export const MICROWAVE: Appliance = {
     id: "microwave",
     name: "Microwave",
-    model: "GE JVM3160RF9SS (validation pending)",
-    simulated: true,
+    model: "GE JVM3160RF9SS",
+    simulated: false,
     controls: [
       { id: "display", label: "Display" },
       { id: "add_30_seconds", label: "Add 30 Sec" },

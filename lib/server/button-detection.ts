@@ -23,6 +23,7 @@ const detectionResponse = z.object({
   detections: z.array(z.object({ mention: z.string(), point_box: z.object({ top_left: point, bottom_right: point }) })).max(100),
 });
 export function detectionCategory(control: Control) {
+  if (control.id === "power") return "washer Power button (circle and line symbol)";
   if (control.id === "cycle_normal") return "washing machine cycle selector rotary dial";
   return control.id === "display" ? "appliance digital display" : `button labeled ${control.label}`;
 }
