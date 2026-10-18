@@ -39,7 +39,7 @@ export function DemoAccess() {
           id="demo-code"
           type="password"
           autoComplete="off"
-          className="min-h-12 rounded-xl border-2 border-ink/60 px-3 text-lg"
+          className="min-h-12 rounded-xl border-2 border-outline bg-card px-3 text-lg text-ink"
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />

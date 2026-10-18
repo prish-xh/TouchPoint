@@ -1,17 +1,88 @@
 @import "tailwindcss";
 
-/* Agreed palette. Every color is paired with text; nothing relies on color alone. */
-@theme {
-  --color-page: #f8fafc;
-  --color-ink: #0f172a;
-  --color-muted: #475569;
-  --color-primary: #1d4ed8;
-  --color-primary-dark: #1e40af;
-  --color-line: #e2e8f0;
-  --color-good: #15803d;
-  --color-warn: #b45309;
-  --color-bad: #b91c1c;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+/*
+ * Two themes, one set of tokens.
+ *  - Warm kitchen (default): cream, terracotta, deep brown.
+ *  - High contrast: black, white, yellow. Chosen with the in-app toggle
+ *    (data-theme="contrast") or the phone's "increase contrast" setting.
+ * Every color is paired with text; status never relies on color alone.
+ */
+:root {
+  --page: #fff7ee;
+  --ink: #3b2416;
+  --muted: #7a4a2e;
+  --card: #ffffff;
+  --line: #f1dcc7;
+  --track: #f1dcc7;
+  --primary: #c2410c;
+  --primary-hover: #9a3412;
+  --on-primary: #fff7ee;
+  --soft: #ffe7d1;
+  --on-soft: #7a2e0a;
+  --link: #9a3412;
+  --outline: #3b2416;
+  --good: #166534;
+  --good-bg: #e7f6ec;
+  --warn: #92400e;
+  --warn-bg: #fef3c7;
+  --bad: #991b1b;
+  --bad-bg: #fde8e8;
+  --camera-bg: #3b2416;
+  --logo-bg: #c2410c;
+  --logo-fg: #fff7ee;
+  --logo-dot: #ffd9b8;
+  --focus: #c2410c;
+}
+
+:root[data-theme="contrast"] {
+  --page: #000000;
+  --ink: #ffffff;
+  --muted: #e5e5e5;
+  --card: #111111;
+  --line: #ffd60a;
+  --track: #4a4a4a;
+  --primary: #ffd60a;
+  --primary-hover: #ffe55c;
+  --on-primary: #000000;
+  --soft: #262626;
+  --on-soft: #ffffff;
+  --link: #ffd60a;
+  --outline: #ffd60a;
+  --good: #7ee2a0;
+  --good-bg: #0b2a17;
+  --warn: #ffd60a;
+  --warn-bg: #2a2300;
+  --bad: #ff8a8a;
+  --bad-bg: #2a0b0b;
+  --camera-bg: #111111;
+  --logo-bg: #ffd60a;
+  --logo-fg: #000000;
+  --logo-dot: #000000;
+  --focus: #ffd60a;
+}
+
+@theme inline {
+  --color-page: var(--page);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-track: var(--track);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-on-primary: var(--on-primary);
+  --color-soft: var(--soft);
+  --color-on-soft: var(--on-soft);
+  --color-link: var(--link);
+  --color-outline: var(--outline);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-camera: var(--camera-bg);
+  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 html {
@@ -20,27 +91,34 @@ html {
 }
 
 body {
-  background: var(--color-page);
-  color: var(--color-ink);
+  background: var(--page);
+  color: var(--ink);
   font-family: var(--font-sans);
   line-height: 1.45;
 }
 
 /* Visible keyboard / switch-control focus everywhere. */
 :focus-visible {
-  outline: 3px solid var(--color-primary);
+  outline: 3px solid var(--focus);
   outline-offset: 3px;
   border-radius: 12px;
 }
+
+/* Headings receive focus programmatically on screen changes (for screen readers); no ring needed there. */
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
+
+@keyframes tp-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  70% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.tp-pop { animation: tp-pop 420ms ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
     transition: none !important;
   }
-}
-
-/* Headings receive focus programmatically on screen changes (for screen readers); no ring needed there. */
-h1[tabindex="-1"]:focus {
-  outline: none;
 }
