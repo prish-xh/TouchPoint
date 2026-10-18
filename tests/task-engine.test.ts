@@ -206,3 +206,18 @@ describe("response validation", () => {
     expect(engine.getSnapshot()).toMatchObject({ status: "paused", panelReady: false, busy: false });
   });
 });
+
+it("speaks confirmed state before the next instruction and at completion", async () => {
+ const engine=await ready({ ...createMockApiClient(), verify: async ({frame:f,stepId})=>({...match(f,stepId),message:"The Cook indicator is on. Do not add more time."}) });
+ await engine.checkAction(frame());
+ expect(engine.getSnapshot().message).toContain("The Cook indicator is on");
+ expect(engine.getSnapshot().message).toContain("Routine complete");
+});
+it("retains nonvisual correction through retry and target arrival",async()=>{
+ const engine=await ready({...createMockApiClient(),verify:async({frame:f,stepId})=>({...match(f,stepId),result:"uncertain",message:"Move your hand aside. Do not press again."})});
+ await engine.checkAction(frame());
+ expect(engine.getSnapshot().message).toBe("Move your hand aside. Do not press again.");
+ engine.reportTargetReached();
+ expect(engine.getSnapshot().message).toContain("Do not press again");
+ expect(engine.getSnapshot().step?.instruction).toBe("Move your hand aside. Do not press again.");
+});

@@ -12,10 +12,12 @@ export const APPLIANCE_FIXTURES: Record<string, {
   },
   laundry: {
     boxes: {
+      power: { x: 0.04, y: 0.32, w: 0.06, h: 0.06 },
       cycle_normal: { x: 0.12, y: 0.3, w: 0.22, h: 0.14 },
       temp_cold: { x: 0.66, y: 0.6, w: 0.22, h: 0.14 },
     },
     readings: {
+      power_on: { expected: "The washer is powered on.", previous: "The washer is off.", wrong: "Power is not confirmed." },
       select_normal: { expected: "Normal is selected.", previous: "Heavy Duty is still selected.", wrong: "Delicates is selected." },
       select_cold: { expected: "Cold is selected.", previous: "Hot is still selected.", wrong: "Warm is selected." },
     },
