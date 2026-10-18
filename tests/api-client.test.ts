@@ -38,7 +38,7 @@ describe("shared foundation", () => {
     ["unreadable", "uncertain"], ["missed_press", "mismatched"],
   ] as const)("returns %s without mutating a routine", async (scenario, result) => {
     const before = JSON.stringify(APPLIANCES);
-    const response = await createMockApiClient(scenario).verify({ ...request, stepId: "press_3" });
+    const response = await createMockApiClient(scenario).verify({ ...request, stepId: "press_add_30" });
     expect(response.result).toBe(result);
     expect(response.observed === null).toBe(scenario === "unreadable");
     expect(JSON.stringify(APPLIANCES)).toBe(before);
@@ -47,12 +47,12 @@ describe("shared foundation", () => {
     const response = await createMockApiClient("unreadable").scan(request);
     expect(response.panelReady).toBe(false);
     expect(response.controls).toEqual([]);
-    expect(response.missingControls).toEqual(["digit_3", "digit_0", "start"]);
+    expect(response.missingControls).toEqual(["add_30_seconds"]);
   });
   it("rejects simulated API failures for both operations", async () => {
     const client = createMockApiClient("api_failure");
     await expect(client.scan(request)).rejects.toMatchObject({ code: "API_FAILURE" });
-    await expect(client.verify({ ...request, stepId: "press_3" })).rejects.toMatchObject({ code: "API_FAILURE" });
+    await expect(client.verify({ ...request, stepId: "press_add_30" })).rejects.toMatchObject({ code: "API_FAILURE" });
   });
   it("rejects unsupported selections and missing capture identifiers", async () => {
     const client = createMockApiClient();
@@ -68,21 +68,21 @@ describe("shared foundation", () => {
     const scan = await client.scan(request);
     scan.controls[0].x = 99;
     expect((await client.scan(request)).controls[0].x).not.toBe(99);
-    await createMockApiClient("wrong_setting").verify({ ...request, stepId: "press_3" });
-    expect((await client.verify({ ...request, stepId: "press_3" })).result).toBe("matched");
+    await createMockApiClient("wrong_setting").verify({ ...request, stepId: "press_add_30" });
+    expect((await client.verify({ ...request, stepId: "press_add_30" })).result).toBe("matched");
   });
 });
 
 describe("HTTP adapter", () => {
   it("rejects stale verification before a controller can consume it", async () => {
     const { createHttpApiClient } = await import("@/lib/api-client");
-    const fetcher = (async () => Response.json({ captureId: "old", stepId: "press_3", result: "matched", observed: "0:03", message: "OK" })) as typeof fetch;
-    await expect(createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_3" })).rejects.toThrow("Stale");
+    const fetcher = (async () => Response.json({ captureId: "old", stepId: "press_add_30", result: "matched", observed: "0:03", message: "OK" })) as typeof fetch;
+    await expect(createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_add_30" })).rejects.toThrow("Stale");
   });
   it("accepts validated matching responses", async () => {
     const { createHttpApiClient } = await import("@/lib/api-client");
-    const fetcher = (async () => Response.json({ captureId: "capture-1", stepId: "press_3", result: "uncertain", observed: null, message: "Cannot confirm" })) as typeof fetch;
-    expect((await createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_3" })).result).toBe("uncertain");
+    const fetcher = (async () => Response.json({ captureId: "capture-1", stepId: "press_add_30", result: "uncertain", observed: null, message: "Cannot confirm" })) as typeof fetch;
+    expect((await createHttpApiClient("private-demo-token", fetcher).verify({ ...request, stepId: "press_add_30" })).result).toBe("uncertain");
   });
   it("rejects malformed scan coordinates", async () => {
     const { createHttpApiClient } = await import("@/lib/api-client");

@@ -9,7 +9,7 @@ import { POST as verifyRoute } from "@/app/api/verify/route";
 
 const frame = { captureId: "capture-1", dataUrl: "data:image/png;base64,aGVsbG8=" };
 const request = { applianceId: "microwave", routineId: "set_30_seconds", frame };
-const box = { controlId: "digit_3", x: 0.1, y: 0.2, w: 0.1, h: 0.1 };
+const box = { controlId: "add_30_seconds", x: 0.1, y: 0.2, w: 0.1, h: 0.1 };
 const preferences = { speechRate: 0.8, instructionDetail: "brief", appVoice: true };
 function transport(body: unknown, status = 200) {
   return vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify(body), { status }));
@@ -19,7 +19,7 @@ function completion(body: unknown, finish = "stop") {
 }
 function detection(body: { controls: Array<{ controlId: string; x: number; y: number; w: number; h: number }> }, finish = "complete") {
   return { finish_reason: finish, detections: body.controls.map((c) => ({
-    mention: `button labeled ${c.controlId === "digit_3" ? "3" : c.controlId}`,
+    mention: `button labeled ${c.controlId === "add_30_seconds" ? "Add 30 Sec" : c.controlId}`,
     point_box: { top_left: { x: c.x * 100, y: c.y * 100 }, bottom_right: { x: (c.x + c.w) * 100, y: (c.y + c.h) * 100 } },
   })) };
 }
@@ -34,11 +34,11 @@ describe("Perceptron adapter", () => {
     const fetcher = transport(detection({ controls: [box] }));
     const result = await createPerceptronClient(fetcher).scan(request);
     expect(result.controls).toHaveLength(1);
-    expect(result.controls[0]).toMatchObject({ controlId: "digit_3", label: "3" });
+    expect(result.controls[0]).toMatchObject({ controlId: "add_30_seconds", label: "Add 30 Sec" });
     for (const key of ["x", "y", "w", "h"] as const) expect(result.controls[0][key]).toBeCloseTo(box[key]);
     expect(result.panelReady).toBe(false);
     expect(result.captureId).toBe(frame.captureId);
-    expect(result.missingControls).toEqual(["digit_0", "start"]);
+    expect(result.missingControls).toEqual([]);
     const [url, init] = fetcher.mock.calls[0];
     expect(url).toBe("https://api.perceptron.inc/v1/detect");
     expect(init?.headers).toMatchObject({ Authorization: "Bearer test-only" });
@@ -55,12 +55,21 @@ describe("Perceptron adapter", () => {
     await expect(createPerceptronClient(transport(body)).scan(request)).rejects.toMatchObject({ code: "INVALID_PROVIDER_RESPONSE" });
   });
   it("never turns OCR into a confirmed action without checked rules", async () => {
-    const result = await createPerceptronClient(transport(completion({ readable: true, displayText: "0:30" }))).verify({ ...request, stepId: "press_0" });
-    expect(result).toMatchObject({ result: "uncertain", observed: "0:30", stepId: "press_0", captureId: frame.captureId });
+    const result = await createPerceptronClient(transport(completion({ readable: true, displayText: "0:30" }))).verify({ ...request, stepId: "press_add_30" });
+    expect(result).toMatchObject({ result: "uncertain", observed: "0:30", stepId: "press_add_30", captureId: frame.captureId });
   });
   it("does not expose unreadable text", async () => {
-    const result = await createPerceptronClient(transport(completion({ readable: false, displayText: "guess" }))).verify({ ...request, stepId: "press_3" });
+    const result = await createPerceptronClient(transport(completion({ readable: false, displayText: "guess" }))).verify({ ...request, stepId: "press_add_30" });
     expect(result.observed).toBeNull();
+  });
+  it("uses structured washer evidence and preserves capture and step identity", async () => {
+    const fetcher = transport(completion({ panelVisible: true, poweredOn: true,
+      selectedCycle: "normal", cycleEvidence: "dial_light", selectedTemperature: "cold",
+      temperatureEvidence: "illuminated_selection" }));
+    const result = await createPerceptronClient(fetcher).verify({ ...request,
+      applianceId: "laundry", routineId: "normal_cold", stepId: "select_cold" });
+    expect(result).toMatchObject({ result: "matched", captureId: frame.captureId, stepId: "select_cold" });
+    expect(String(fetcher.mock.calls[0][1]?.body)).toContain("SOIL LEVEL");
   });
   it("rejects unsupported steps before calling the provider", async () => {
     const fetcher = transport({});
@@ -143,7 +152,7 @@ describe("route boundaries", () => {
   });
   it("serves valid OCR responses via the verify route", async () => {
     vi.stubGlobal("fetch", transport(completion({ readable: true, displayText: "0:03" })));
-    const response = await verifyRoute(new Request("http://localhost/api/verify", { method: "POST", headers: { Authorization: "Bearer test-only" }, body: JSON.stringify({ ...request, stepId: "press_3" }) }));
+    const response = await verifyRoute(new Request("http://localhost/api/verify", { method: "POST", headers: { Authorization: "Bearer test-only" }, body: JSON.stringify({ ...request, stepId: "press_add_30" }) }));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ result: "uncertain" });
   });

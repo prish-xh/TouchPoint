@@ -20,7 +20,7 @@ async function ready(client: PerceptionClient = createMockApiClient()) {
   engine.startGuidance();
   return engine;
 }
-function match(f: Frame, stepId = "press_3"): VerifyResponse {
+function match(f: Frame, stepId = "press_add_30"): VerifyResponse {
   return { captureId: f.captureId, stepId, result: "matched", observed: "0:03", message: "Matched" };
 }
 
@@ -47,14 +47,14 @@ describe("routine transitions", () => {
   });
   it("each matched check advances exactly once and completion clears the target", async () => {
     const engine = await ready();
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 1; i++) {
       await engine.checkAction(frame());
       expect(engine.getSnapshot().stepIndex).toBe(i);
     }
     expect(engine.getSnapshot()).toMatchObject({ status: "done", step: null, targetControl: null, busy: false });
     await engine.checkAction(frame());
     engine.resume(); engine.reportCameraMoved(); engine.reportTargetReached();
-    expect(engine.getSnapshot().stepIndex).toBe(3);
+    expect(engine.getSnapshot().stepIndex).toBe(1);
   });
   it.each(["unreadable", "wrong_setting", "api_failure"] as const)("%s cannot advance", async (scenario) => {
     const client = { ...createMockApiClient(), verify: createMockApiClient(scenario).verify };
@@ -77,7 +77,9 @@ describe("routine transitions", () => {
     expect(engine.getSnapshot()).toMatchObject({ status: "guiding", stepIndex: 0 });
   });
   it("requires rescan after camera movement, including while manually paused", async () => {
-    const engine = await ready();
+    const engine = createTaskEngine(createMockApiClient());
+    engine.selectRoutine("laundry", "normal_cold");
+    await engine.scanFrame(frame()); engine.startGuidance();
     await engine.checkAction(frame());
     engine.pause(); engine.reportCameraMoved(); engine.resume();
     expect(engine.getSnapshot()).toMatchObject({ status: "scanning", panelReady: false, targetControl: null, stepIndex: 1 });
@@ -179,7 +181,7 @@ describe("response validation", () => {
     }) });
     engine.selectRoutine("microwave", "set_30_seconds"); await engine.scanFrame(frame()); engine.startGuidance();
     expect(engine.getSnapshot()).toMatchObject({ status: "scanning", panelReady: false });
-    expect(engine.getSnapshot().missingControls).toHaveLength(3);
+    expect(engine.getSnapshot().missingControls).toHaveLength(1);
   });
   it("honors provider panelReady=false even when all controls exist", async () => {
     const mock = createMockApiClient();
