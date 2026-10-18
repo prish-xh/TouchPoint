@@ -1,27 +1,24 @@
 import type { Appliance } from "@/types/touchpoint";
 
-/** Simulated SIM-MW1 only. Not checked against a physical appliance. */
+/** GE panel reference; simulated remains true until live acceptance tests pass. */
 export const MICROWAVE: Appliance = {
     id: "microwave",
     name: "Microwave",
-    model: "Simulated keypad microwave (SIM-MW1)",
+    model: "GE JVM3160RF9SS (validation pending)",
     simulated: true,
     controls: [
       { id: "display", label: "Display" },
-      { id: "digit_3", label: "3" },
-      { id: "digit_0", label: "0" },
-      { id: "start", label: "Start" },
-      { id: "stop", label: "Stop" },
+      { id: "add_30_seconds", label: "Add 30 Sec" },
+      { id: "start", label: "Start Pause" },
+      { id: "stop", label: "Cancel Off" },
     ],
     routines: [
       {
         id: "set_30_seconds",
         name: "Set 30 seconds",
-        goal: "Enter a 30-second cooking time and start it.",
+        goal: "Start 30 seconds of cooking using Add 30 Sec.",
         steps: [
-          { id: "press_3", controlId: "digit_3", instruction: "Press 3." },
-          { id: "press_0", controlId: "digit_0", instruction: "Press 0." },
-          { id: "press_start", controlId: "start", instruction: "Press Start." },
+          { id: "press_add_30", controlId: "add_30_seconds", instruction: "With food inside and the microwave idle, press Add 30 Sec once. Cooking starts immediately. Do not press again while waiting for verification." },
         ],
       },
     ],

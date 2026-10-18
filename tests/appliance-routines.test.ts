@@ -26,7 +26,7 @@ describe("three appliance backend profiles", () => {
           expect(engine.getSnapshot().lastResult?.observed).toBeTruthy();
         }
         expect(engine.getSnapshot().status).toBe("done");
-        expect(appliance.simulated).toBe(true);
+        expect(appliance.simulated).toBe(appliance.id !== "laundry");
       });
       it.each(["wrong_setting", "unreadable", "api_failure", "missed_press"] as const)(`${appliance.id}: %s never advances`, async (scenario) => {
         const client = { ...createMockApiClient(), verify: createMockApiClient(scenario).verify };
